@@ -8,9 +8,88 @@ output: github_document
 This is the repo for visualization and EDA for p8105
 
 ```{r setup, include=FALSE}
-
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Let's import data
+
+```{r}
 library(tidyverse)
 
+library(ggridges)
+
+```
+
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Waikiki_HA",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+Let's make a scatterplot
+
+```{r}
+weather_df %>%
+  drop_na() %>%
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point()
+```
+
+Let's keep making the same plot but different
+
+```{r}
+weather_scatterplot = 
+  weather_df %>%
+  drop_na() %>%
+  ggplot(aes(x = tmin, y = tmax))
+
+weather_scatterplot +
+  geom_point()
+
+```
+
+## Let's fancy it up
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE)
+```
+
+Maybe make separate panels 
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name)
+```
+
+*name against the dot would make tmin the x and tmax the y and the 3 separate plots in that. Almost like making it wide instead of long, 
+
+`tmax` v `tmin` is boring, let's spice it up 
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = date, y = tmax, color = name)) +
+  geom_point(aes(size = prcp), alpha = 0.3) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
