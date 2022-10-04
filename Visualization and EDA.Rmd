@@ -1,5 +1,5 @@
 ---
-title: "Visualization and EDA"
+title: "Visualization and EDA I"
 author: "Alana Ferris"
 date: "2022-09-29"
 output: github_document
@@ -12,6 +12,8 @@ This is the repo for visualization and EDA for p8105
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+# Visualization I
 
 ## Let's import data
 
@@ -153,4 +155,3 @@ ggsave(
 ```{r, fig.width = 10}
 weather_scatterplot
 ```
-
