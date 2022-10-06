@@ -14,7 +14,7 @@ library(tidyverse)
 library(lubridate)
 ```
 
-# Load the Data
+## Load the Data
 
 ```{r}
 weather_df =  
@@ -160,7 +160,40 @@ weather_df %>%
     names_from = name,
     values_from = mean_tmax
   ) %>% 
-  knitr::kable()
+  knitr::kable(digit = 2)
 ```
 
 Use `knitr::kable()` to have a nicer table for printing, see it in the knitted document 
+
+## Group Mutates
+
+```{r}
+weather_df %>% 
+  group_by(name) %>% 
+  mutate(mean_tmax = mean(tmax, na.rm = TRUE),
+  centered_tmax = tmax - mean_tmax) %>% 
+  ggplot(aes(x = date, y = centered_tmax, color = name)) +
+  geom_point()
+```
+
+```{r}
+weather_df %>%
+  group_by(name) %>%
+  mutate(
+    yesterday_tmax = lag(tmax),
+tmax_change = tmax - yesterday_tmax) %>% 
+  summarize(
+    sd_tmax_change = sd(tmax_change, na.rm = TRUE))
+
+```
+
+```{r}
+weather_df %>% 
+  group_by(name, month) %>% 
+  mutate(
+    tmax_rank = min_rank(tmax)
+  ) %>% 
+  filter(tmax_rank < 4) %>% 
+  arrange(name, month, tmax_rank)
+```
+
