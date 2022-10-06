@@ -1,0 +1,166 @@
+---
+title: 'numeric_eda'
+author: "Alana Ferris"
+date: "2022-10-06"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+# Load the Data
+
+```{r}
+weather_df =  
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Waikiki_HA",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10,
+    month = lubridate::floor_date(date, unit = "month")) %>%
+  select(name, id, everything())
+```
+
+`lubridate::floor_date` to help with date and time, this one rounds down. Feb 26 to Feb 1, for example. 
+
+## `group_by()`
+
+```{r}
+weather_df %>% 
+  group_by(name, month)
+```
+
+## `summarize()`
+
+Let's group and then summarize
+
+```{r}
+weather_df %>% 
+  group_by(name, month) %>% 
+  summarize(
+    n_obs = n()
+  )
+```
+
+`n()` counts the things inside the group, n_obs is the new variable. Created a very small data frame/tibble, with group names and the new variable which is the number of things in that group.
+
+Can we count in other ways? Yes, `count` does it in one line of code by the group you tell it to count. Either is fine to use though.
+
+```{r}
+weather_df %>% 
+  count(name)
+```
+
+Don't use `table()`, because can't use it in the next step, isn't a new data frame. 
+
+you can have multiple summaries
+
+```{r}
+weather_df %>% 
+  group_by(month) %>% 
+  summarize(
+    n_obs = n(),
+    n_dist = n_distinct(date)
+  )
+```
+
+`n_distinct` counting up all the unique rows in the entire data set. And everything is distinct in this dataframe, so add `month` to figure out how many distinct observations per month. Basically just trying to say have count functions that can put new column in data set 
+
+## a brief aside on 2x2 tables
+
+```{r}
+weather_df %>% 
+  mutate(
+    cold = case_when(
+      tmax <  5 ~ "cold",
+      tmax >= 5 ~ "not_cold",
+      TRUE      ~ ""
+  )) %>% 
+  filter(name != "Waikiki_HA") %>% 
+  group_by(name, cold) %>% 
+  summarize(
+    n_obs = n()
+  ) %>% 
+  pivot_wider(
+    names_from = cold,
+    values_from = n_obs
+  )
+```
+
+There is a quicker and easier way though, with `janitor::tabyl`
+
+```{r}
+weather_df %>% 
+  mutate(
+    cold = case_when(
+      tmax <  5 ~ "cold",
+      tmax >= 5 ~ "not_cold",
+      TRUE      ~ "THIS IS A PROBLEM"
+  )) %>% 
+  filter(name != "Waikiki_HA") %>% 
+  janitor::tabyl(name, cold)
+```
+
+## General Summaries
+
+`na.rm = ` removes the NAs 
+
+```{r}
+weather_df %>% 
+  group_by(name, month) %>% 
+  summarize(
+    n_obs = n(),
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    sd_prcp = sd(prcp),
+    median_tmax = median(tmax, na.rm = TRUE)
+  )
+```
+
+Do this if know will need to take the mean across variables
+```{r}
+weather_df %>% 
+  group_by(name, month) %>% 
+  summarize(across(prcp:tmin, mean))
+```
+
+This is a dataframe!
+
+```{r}
+weather_df %>% 
+  group_by(name, month) %>% 
+  summarize(
+    mean_tmax = mean(tmax, na.rm = TRUE)
+  ) %>% 
+  ggplot(aes(x = month, y = mean_tmax, color = name)) +
+  geom_point() +
+  geom_path()
+```
+
+```{r}
+weather_df %>% 
+  group_by(name, month) %>% 
+  summarize(
+    mean_tmax = mean(tmax, na.rm = TRUE)
+  ) %>% 
+  pivot_wider(
+    names_from = name,
+    values_from = mean_tmax
+  ) %>% 
+  knitr::kable()
+```
+
+Use `knitr::kable()` to have a nicer table for printing, see it in the knitted document 
